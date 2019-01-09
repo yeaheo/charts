@@ -93,23 +93,30 @@ The configuration parameters in this section control the resources requested and
 | image.repository | The docker hub repo for SQL Server                                                             | `microsoft/mssql-server-linux`   |
 | image.tag        | The tag for the image                                                                          | `2017-CU5`                       |
 | image.pullPolicy | The pull policy for the deployment                                                             | `IfNotPresent`                   |
+| image.pullSecrets   | Specify an image pull secret if needed  | `Commented Out`  |
 | nodeSelector     | Node labels for pod assignment                                                                 | `{}`                             |
+| service.headless   | Allows you to setup a headless service  | `false`  |
 | service.type     | Service Type                                                                                   | `ClusterIP`                      |
 | service.port     | Service Port                                                                                   | `1433`                           |
+| service.annotations | Kubernetes service annotations                                                              | `{}`                             |
+| deployment.annotations | Kubernetes deployment annotations                                                        | `{}`                             |
 | collation        | Default collation for SQL Server                                                               | `SQL_Latin1_General_CP1_CI_AS`   |
 | lcid             | Default languages for SQL Server                                                               | `1033`                           |
 | hadr             | Enable Availability Group                                                                      | `0`                              |
 | persistence.enabled | Persist the Data and Log files for SQL Server                                               | `false`                          |
 | persistence.existingDataClaim | Identify an existing Claim to be used for the Data Directory                      | `Commented Out`                  |
-| persistence.existingLogClaim  | Identify an existing Claim to be used for the Log Directory                       | `Commented Out`                  |
+| persistence.existingTransactionLogClaim  | Identify an existing Claim to be used for the Log Directory            | `Commented Out`                  |
 | persistence.existingBackupClaim | Identify an existing Claim to be used for the SQL Database Backups              | `Commented Out`                  |
+| persistence.existingMasterClaim | Identify an existing Claim to be used for the Master Database log & file        | `Commented Out`                  |
 | persistence.storageClass      | Storage Class to be used                                                          | `Commented Out`                  |
 | persistence.dataAccessMode    | Data Access Mode to be used for the Data Directory                                | `ReadWriteOnce`                  |
 | persistence.dataSize          | PVC Size for Data Directory                                                       | `1Gi`                            |
 | persistence.logAccessMode     | Data Access Mode to be used for the Log Directory                                 | `ReadWriteOnce`                  |
 | persistence.logSize           | PVC Size for Log Directory                                                        | `1Gi`                            |
-| persistence.backupAccessMode     | Data Access Mode to be used for the Backup Directory                           | `ReadWriteOnce`                  |
-| persistence.backupSize           | PVC Size for Backup Directory                                                  | `1Gi`                            |
+| persistence.backupAccessMode  | Data Access Mode to be used for the Backup Directory                              | `ReadWriteOnce`                  |
+| persistence.backupSize        | PVC Size for Backup Directory                                                     | `1Gi`                            |
+| persistence.masterAccessMode  | Data Access Mode to be used for the Master Database                               | `ReadWriteOnce`                  |
+| persistence.masterSize        | PVC Size for Master Database                                                      | `1Gi`                            |
 
 > 1 - [Please read password requirements](https://docs.microsoft.com/en-us/sql/relational-databases/security/password-policy)
 
@@ -157,8 +164,9 @@ Persistence in this chart can be enabled by specifying `persistence.enabled=true
 persistence:
   enabled: true
   # existingDataClaim:
-  # existingLogClaim:
+  # existingTransactionLogClaim:
   # existingBackupClaim:
+  # existingMasterClaim:
   # storageClass: "-"
   dataAccessMode: ReadWriteOnce
   dataSize: 1Gi
@@ -166,6 +174,8 @@ persistence:
   logSize: 1Gi
   backupAccessMode: ReadWriteOnce
   backupLogSize: 1Gi
+  masterAccessMode: ReadWriteOnce
+  masterSize: 1Gi
 ```
 
 * Example 2 - Enable persistence in values.yaml with existing claim
@@ -175,15 +185,18 @@ persistence:
 persistence:
   enabled: true
   existingDataClaim: pvc-mssql-data
-  existingLogClaim: pvc-mssql-log
+  existingTransactionLogClaim: pvc-mssql-log
   existingBackupClaim: pvc-mssql-backup
+  existingMasterClaim: pvc-mssql-master
   # storageClass: "-"
-  dataAccessMode: ReadWriteOnce
-  dataSize: 1Gi
-  logAccessMode: ReadWriteOnce
-  logSize: 1Gi
-  backupAccessMode: ReadWriteOnce
-  backupLogSize: 1Gi
+  # dataAccessMode: ReadWriteOnce
+  # dataSize: 1Gi
+  # logAccessMode: ReadWriteOnce
+  # logSize: 1Gi
+  # backupAccessMode: ReadWriteOnce
+  # backupLogSize: 1Gi
+  # masterAccessMode: ReadWriteOnce
+  # masterSize: 1Gi
 ```
 
 ## SQL Server for Linux Editions
@@ -209,6 +222,7 @@ To change the language of the MSSQL installation, change the `lcid` key in the `
 1>select substring(convert(varchar(30),serverproperty('Collation')),1,30), substring(convert(varchar(20),serverproperty('lcid')),1,20);
 2>go
 ```
+
 ## Master database files
 
 As part of this chart the `master` database is configured to be installed based in the `/mssql-data/master`.

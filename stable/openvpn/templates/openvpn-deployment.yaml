@@ -9,6 +9,10 @@ metadata:
     heritage: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
+{{- if .Values.updateStrategy }}
+  strategy:
+{{ toYaml .Values.updateStrategy | indent 4 }}
+{{- end }}
   selector:
     matchLabels:
       app: {{ template "openvpn.name" . }}
@@ -18,6 +22,11 @@ spec:
       labels:
         app: {{ template "openvpn.name" . }}
         release: {{ .Release.Name }}
+      annotations:
+        checksum/config: {{ include (print .Template.BasePath "/config-openvpn.yaml") . | sha256sum }}
+        {{- if .Values.podAnnotations }}
+{{ toYaml .Values.podAnnotations | indent 8 }}
+        {{- end }}
     spec:
       containers:
       - name: {{ .Chart.Name }}
@@ -43,8 +52,11 @@ spec:
             name: openvpn
             readOnly: false
           - mountPath: /etc/openvpn/certs
+            {{- if .Values.persistence.subPath }}
+            subPath: {{ .Values.persistence.subPath }}
+            {{- end }}
             name: certs
-            readOnly: false
+            readOnly: {{ if .Values.openvpn.keystoreSecret }}true{{ else }}false{{ end }}
       volumes:
       - name: openvpn
         configMap:
@@ -54,6 +66,19 @@ spec:
         {{- if .Values.persistence.enabled }}
         persistentVolumeClaim:
           claimName: {{ if .Values.persistence.existingClaim }}{{ .Values.persistence.existingClaim }}{{- else }}{{ template "openvpn.fullname" . }}{{- end }}
+        {{- else if .Values.openvpn.keystoreSecret }}
+        secret:
+          secretName: "{{ .Values.openvpn.keystoreSecret }}"
+          defaultMode: 448
+          items:
+          - key: "server.key"
+            path: "pki/private/server.key"
+          - key: "ca.crt"
+            path: "pki/ca.crt"
+          - key: "server.crt"
+            path: "pki/issued/server.crt"
+          - key: "dh.pem"
+            path: "pki/dh.pem"
         {{- else }}
         emptyDir: {}
         {{- end -}}
